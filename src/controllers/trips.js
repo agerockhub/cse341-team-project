@@ -1,5 +1,5 @@
+
 // src/controllers/trips.js
-import { getDb } from "../db/connect.js";
 import {
     getTripById as findTripById,
     getAllTrips as findAllTrips,
@@ -61,13 +61,10 @@ export async function tripDetailsPage(req, res, next) {
             return next(error);
         }
 
-        // Temporary: the Schedules feature will replace this with an API call from the page.
-        details.schedules = await getDb()
-            .collection("schedules")
-            .find({ tripId })
-            .toArray();
-
-        return res.render("trips/details", { title: "Trip Details", details });
+        return res.render("trips/details", {
+            title: "Trip Details",
+            details,
+        });
     } catch (error) {
         return next(error);
     }

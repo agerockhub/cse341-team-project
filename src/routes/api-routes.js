@@ -1,6 +1,9 @@
-// src/routes/api-routes.js
 import { Router } from 'express';
 import { getAllTrips, getTripById } from '../controllers/trips.js';
+import {
+    getSchedulesForTrip,
+    getSchedulesForTripAndMonth,
+} from '../controllers/schedules.js';
 
 const router = Router();
 
@@ -40,5 +43,45 @@ router.get('/api/trips', getAllTrips);
  *         description: Failed to fetch trip
  */
 router.get('/api/trips/:id', getTripById);
+
+/**
+ * @swagger
+ * /api/trips/{id}/schedules:
+ *   get:
+ *     summary: Get schedules for a specific trip
+ *     tags: [Schedules]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: alpine-panorama
+ *       - in: query
+ *         name: month
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 12
+ *         example: 4
+ *         description: Optional month number used to filter by the trip's operating months
+ *     responses:
+ *       200:
+ *         description: List of schedules for the trip
+ *       400:
+ *         description: Invalid month parameter
+ *       404:
+ *         description: Trip not found
+ *       500:
+ *         description: Failed to fetch schedules
+ */
+router.get('/api/trips/:id/schedules', (req, res, next) => {
+    if (req.query.month !== undefined) {
+        return getSchedulesForTripAndMonth(req, res, next);
+    }
+
+    return getSchedulesForTrip(req, res, next);
+});
 
 export default router;
