@@ -1,0 +1,52 @@
+<%- include('./partials/header') %>
+
+<section class="trains-hero">
+    <h1>Bookings Admin</h1>
+    <p>All bookings made through Kizuna Rail.</p>
+</section>
+
+<section class="trains-catalog">
+    <div class="trains-state" id="bookings-loading">Loading bookings...</div>
+    <div class="trains-state trains-error" id="bookings-error" hidden></div>
+
+    <div class="passengers-list" id="bookings-list"></div>
+
+    <template id="booking-card-template">
+        <article class="passenger-info-card">
+            <div class="passenger-header">
+                <h2 class="passenger-title" data-field="reference"></h2>
+            </div>
+            <div class="passenger-details">
+                <div class="passenger-detail">
+                    <span class="passenger-label">Trip</span>
+                    <span class="passenger-value" data-field="trip"></span>
+                </div>
+                <div class="passenger-detail">
+                    <span class="passenger-label">Ticket Class</span>
+                    <span class="passenger-value" data-field="ticket"></span>
+                </div>
+                <div class="passenger-detail">
+                    <span class="passenger-label">Travel Day</span>
+                    <span class="passenger-value" data-field="day"></span>
+                </div>
+                <div class="passenger-detail">
+                    <span class="passenger-label">Passengers</span>
+                    <span class="passenger-value" data-field="count"></span>
+                </div>
+                <div class="passenger-detail">
+                    <span class="passenger-label">Lead Passenger</span>
+                    <span class="passenger-value" data-field="lead"></span>
+                </div>
+                <div class="passenger-detail">
+                    <span class="passenger-label">Booked On</span>
+                    <span class="passenger-value" data-field="booked"></span>
+                </div>
+                <a href="#" class="view-details-btn" data-field="link">View Confirmation</a>
+            </div>
+        </article>
+    </template>
+</section>
+
+<script src="/js/bookings.js"></script>
+
+<%- include('./partials/footer') %>
