@@ -184,6 +184,44 @@ article.route-detail {
         .route-schedules {
             grid-area: schedules;
 
+.schedule-filter {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+
+    label {
+        font-size: var(--font-size-sm);
+        font-weight: 500;
+        color: var(--clr-text-primary);
+    }
+
+    select {
+        width: 100%;
+        max-width: 320px;
+        padding: var(--space-sm) var(--space-md);
+        border: 1px solid var(--clr-border);
+        border-radius: var(--radius-md);
+        background-color: var(--clr-surface);
+        color: var(--clr-text-primary);
+        font: inherit;
+    }
+}
+
+#schedules-loading,
+#schedules-message {
+    margin-bottom: var(--space-md);
+    color: var(--clr-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+#schedules-message {
+    padding: var(--space-md);
+    background-color: var(--clr-surface);
+    border: 1px solid var(--clr-border-light);
+    border-radius: var(--radius-md);
+}
+
             .schedules-grid {
                 display: flex;
                 flex-direction: column;
