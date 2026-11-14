@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { getAllTrips, getTripById } from '../controllers/trips.js';
-import { getSchedulesForTrip } from '../controllers/schedules.js';
+import {
+    getSchedulesForTrip,
+    getSchedulesForTripAndMonth,
+} from '../controllers/schedules.js';
 
 const router = Router();
 
@@ -73,6 +76,12 @@ router.get('/api/trips/:id', getTripById);
  *       500:
  *         description: Failed to fetch schedules
  */
-router.get('/api/trips/:id/schedules', getSchedulesForTrip);
+router.get('/api/trips/:id/schedules', (req, res, next) => {
+    if (req.query.month !== undefined) {
+        return getSchedulesForTripAndMonth(req, res, next);
+    }
+
+    return getSchedulesForTrip(req, res, next);
+});
 
 export default router;
