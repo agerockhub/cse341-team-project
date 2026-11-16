@@ -4,6 +4,7 @@ import {
     getSchedulesForTrip,
     getSchedulesForTripAndMonth,
 } from '../controllers/schedules.js';
+import { getAllBookings } from '../controllers/bookings.js';
 
 const router = Router();
 
@@ -83,5 +84,19 @@ router.get('/api/trips/:id/schedules', (req, res, next) => {
 
     return getSchedulesForTrip(req, res, next);
 });
+
+/**
+ * @swagger
+ * /api/bookings:
+ *   get:
+ *     summary: Get all bookings
+ *     tags: [Bookings]
+ *     responses:
+ *       200:
+ *         description: A list of all bookings
+ *       500:
+ *         description: Failed to fetch bookings
+ */
+router.get('/api/bookings', getAllBookings);
 
 export default router;
