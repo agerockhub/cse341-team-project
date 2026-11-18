@@ -1,0 +1,41 @@
+<%- include('./partials/header') %>
+    <article class="booking-page">
+        <div class="route-header">
+            <div class="route-header-content">
+                <h1 class="route-name">
+                    <%= title %>
+                </h1>
+                <p class="route-description">Sign in to your Kizuna Rail account.</p>
+            </div>
+        </div>
+
+        <% if (query.registered) { %>
+            <p class="trains-state">Account created. Please log in.</p>
+            <% } %>
+
+                <% if (error) { %>
+                    <p class="trains-state trains-error">
+                        <%= error %>
+                    </p>
+                    <% } %>
+
+                        <form class="booking-form" method="POST" action="/login">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    <input type="email" id="email" name="email" class="form-input"
+                                        value="<%= values.email || '' %>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="password" class="form-label">Password</label>
+                                    <input type="password" id="password" name="password" class="form-input" required>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Log In</button>
+                                <a href="/register" class="btn btn-secondary">Create an account</a>
+                            </div>
+                        </form>
+    </article>
+    <%- include('./partials/footer') %>
