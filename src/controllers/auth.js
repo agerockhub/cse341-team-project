@@ -3,6 +3,9 @@ import { createUser, findUserByEmail, verifyPassword } from "../models/users.js"
 
 const text = (value) => (typeof value === "string" ? value : "");
 
+// One place that decides where a signed-in user goes. Feature Set 2 changes "/" to "/dashboard".
+const homeFor = (user) => (user.role === "admin" ? "/admin-dashboard" : "/");
+
 const renderRegister = (res, status, error, values = {}) =>
     res.status(status).render("register", { title: "Register", error, values });
 
@@ -10,10 +13,16 @@ const renderLogin = (res, status, error, values = {}) =>
     res.status(status).render("login", { title: "Log In", error, values });
 
 export function registerPage(req, res) {
+    if (req.user) {
+        return res.redirect(homeFor(req.user));
+    }
     return renderRegister(res, 200, null);
 }
 
 export function loginPage(req, res) {
+    if (req.user) {
+        return res.redirect(homeFor(req.user));
+    }
     return renderLogin(res, 200, null);
 }
 
@@ -78,7 +87,7 @@ export async function login(req, res, next) {
                     return next(saveError);
                 }
                 // Set 2 will send non-admin users to /dashboard.
-                return res.redirect(sessionUser.role === "admin" ? "/admin-dashboard" : "/");
+                return res.redirect(homeFor(sessionUser));
             });
         });
     } catch (error) {

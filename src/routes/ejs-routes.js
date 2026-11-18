@@ -24,7 +24,7 @@ router.post('/trips/book', processBookingRequest);
 router.get('/trips/confirmation/:confirmationId', bookingConfirmationPage);
 
 // Bookings admin page (filled in by client-side JavaScript)
-router.get('/bookings-admin', bookingsAdminPage);
+router.get('/bookings-admin', requirePageRole('admin'), bookingsAdminPage);
 
 // Authentication
 router.get('/register', registerPage);

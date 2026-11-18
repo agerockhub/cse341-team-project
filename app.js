@@ -20,7 +20,14 @@ if (!SESSION_SECRET) {
     throw new Error('SESSION_SECRET is required. Add it to your .env file.');
 }
 
+const isProduction = process.env.NODE_ENV?.toLowerCase() === 'production';
+
 const app = express();
+
+// Render sits behind a proxy. Without this, secure cookies are never sent back.
+if (isProduction) {
+    app.set('trust proxy', 1);
+}
 
 // Add version info to res.locals for access in templates.
 app.use((req, res, next) => {
@@ -43,7 +50,12 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     rolling: true,
-    cookie: { maxAge: 60 * 60 * 1000, sameSite: 'lax' } // 1 hour of inactivity
+    cookie: {
+        maxAge: 60 * 60 * 1000, // 1 hour of inactivity
+        httpOnly: true,         // JavaScript in the browser cannot read the cookie
+        sameSite: 'lax',
+        secure: isProduction    // HTTPS only when deployed
+    }
 }));
 app.use(loadSessionUser);
 

@@ -5,6 +5,7 @@ import {
     getSchedulesForTripAndMonth,
 } from '../controllers/schedules.js';
 import { getAllBookings } from '../controllers/bookings.js';
+import { requireApiRole } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -89,14 +90,19 @@ router.get('/api/trips/:id/schedules', (req, res, next) => {
  * @swagger
  * /api/bookings:
  *   get:
- *     summary: Get all bookings
+ *     summary: Get all bookings (admin only)
+ *     description: Requires a signed-in admin session (session cookie).
  *     tags: [Bookings]
  *     responses:
  *       200:
  *         description: A list of all bookings
+ *       401:
+ *         description: Not signed in
+ *       403:
+ *         description: Signed in but not an admin
  *       500:
  *         description: Failed to fetch bookings
  */
-router.get('/api/bookings', getAllBookings);
+router.get('/api/bookings', requireApiRole('admin'), getAllBookings);
 
 export default router;
