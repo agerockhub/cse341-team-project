@@ -11,10 +11,13 @@
             // Get the current hostname and port from the browser
             const host = window.location.hostname;
             const currentPort = window.location.port;
+
             // Calculate WebSocket port (current port + 1)
             const wsPort = currentPort ? (parseInt(currentPort) + 1) : 3001;
+
             // Create WebSocket connection using dynamic hostname and port
             const ws = new WebSocket(`ws://${host}:${wsPort}`);
+
             ws.onclose = () => {
                 setTimeout(() => location.reload(), 2000);
             };
@@ -25,23 +28,54 @@
     <header class="content-grid">
         <div class="content">
             <div class="logo">
-                <a href="/"><img src="/images/logo-with-text.png" alt="Kizuna Rail Logo"></a>
+                <a href="/">
+                    <img src="/images/logo-with-text.png" alt="Kizuna Rail Logo">
+                </a>
             </div>
+
             <nav>
                 <input id="mobile-menu-toggle" type="checkbox">
+
                 <label for="mobile-menu-toggle">
                     <span></span>
                     <span></span>
                     <span></span>
                 </label>
+
                 <ul>
                     <li><a href="/trips">Trips</a></li>
                     <li><a href="/trains">Trains</a></li>
                     <li><a href="/about">About</a></li>
-                    <li><a href="/404">404</a></li>
-                    <li><a href="/500">500</a></li>
+
+                    <% if (user) { %>
+
+                        <li>
+                            <a href="<%= user.role === 'admin' ? '/admin-dashboard' : '/dashboard' %>">
+                                Dashboard
+                            </a>
+                        </li>
+
+                        <% if (user.role === 'admin') { %>
+                            <li>
+                                <a href="/bookings-admin">Bookings Admin</a>
+                            </li>
+                        <% } %>
+
+                        <li>
+                            <form method="POST" action="/logout">
+                                <button type="submit">Log Out</button>
+                            </form>
+                        </li>
+
+                    <% } else { %>
+
+                        <li><a href="/register">Register</a></li>
+                        <li><a href="/login">Login</a></li>
+
+                    <% } %>
                 </ul>
             </nav>
         </div>
     </header>
+
     <main class="content-grid">
