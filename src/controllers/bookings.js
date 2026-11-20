@@ -5,11 +5,13 @@ import { getTripById as findTripById } from "../models/trips.js";
 import {
     createBooking,
     getAllBookings as findAllBookings,
+    getBookingsByPassengerEmail,
     getBookingById as findBookingById,
 } from "../models/bookings.js";
 
 // ---- API controller (JSON) ----
 
+// Get all bookings (admin only).
 export async function getAllBookings(req, res) {
     try {
         const bookings = await findAllBookings();
@@ -20,6 +22,29 @@ export async function getAllBookings(req, res) {
 
         return res.status(500).json({
             error: "Failed to fetch bookings",
+        });
+    }
+}
+
+// Get bookings belonging to the logged-in user.
+export async function getMyBookings(req, res) {
+    try {
+        const email = req.session?.user?.email;
+
+        if (!email) {
+            return res.status(401).json({
+                message: "User email not found in session. Please log in again.",
+            });
+        }
+
+        const bookings = await getBookingsByPassengerEmail(email);
+
+        return res.status(200).json(bookings);
+    } catch (error) {
+        console.error("Error fetching customer bookings:", error);
+
+        return res.status(500).json({
+            error: "Failed to fetch your bookings",
         });
     }
 }

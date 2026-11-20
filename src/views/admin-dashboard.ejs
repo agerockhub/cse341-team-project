@@ -1,10 +1,8 @@
 <%- include('./partials/header') %>
-    <section class="trains-hero">
-        <h1>Welcome to the Admin Dashboard</h1>
-        <p>Signed in as <%= user.name %>.</p>
-    </section>
 
-    <form method="POST" action="/logout">
-        <button type="submit" class="btn btn-secondary">Log Out</button>
-    </form>
-    <%- include('./partials/footer') %>
+<section class="trains-hero">
+    <h1>Welcome to the Admin Dashboard</h1>
+    <p>Signed in as <%= user.name %>.</p>
+</section>
+
+<%- include('./partials/footer') %>

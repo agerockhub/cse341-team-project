@@ -1,0 +1,110 @@
+
+<%- include('./partials/header') %>
+
+<section class="trains-hero">
+    <h1>Welcome, <%= user.name %>!</h1>
+    <p>Welcome to your Kizuna Rail customer dashboard.</p>
+    <p>Signed in as: <strong><%= user.email %></strong></p>
+</section>
+
+<section class="content">
+    <h2>My Bookings</h2>
+    <p>View and manage your train booking information below.</p>
+
+    <div id="bookings-message" role="status" aria-live="polite">
+        Loading your bookings...
+    </div>
+
+    <div id="my-bookings"></div>
+</section>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", async () => {
+        const bookingsContainer = document.getElementById("my-bookings");
+        const message = document.getElementById("bookings-message");
+
+        try {
+            const response = await fetch("/api/bookings/me", {
+                method: "GET",
+                credentials: "same-origin",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+            if (response.status === 401) {
+                message.textContent = "Your session has expired. Please log in again.";
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error("Unable to retrieve your bookings.");
+            }
+
+            const bookings = await response.json();
+
+            if (!Array.isArray(bookings) || bookings.length === 0) {
+                message.textContent = "You have not made any bookings yet.";
+                return;
+            }
+
+            message.textContent = `You have ${bookings.length} booking(s).`;
+
+            bookings.forEach((booking) => {
+                const card = document.createElement("article");
+                card.className = "booking-card";
+
+                const heading = document.createElement("h3");
+                heading.textContent = `Booking Reference: ${booking.id}`;
+                card.appendChild(heading);
+
+                const details = [
+                    ["Trip", booking.tripId],
+                    ["Travel Date", booking.selectedDay],
+                    ["Ticket Class", booking.ticketClass],
+                    ["Schedule ID", booking.scheduleId],
+                    ["Booking Date", booking.createdAt
+                        ? new Date(booking.createdAt).toLocaleDateString()
+                        : "Not available"]
+                ];
+
+                details.forEach(([label, value]) => {
+                    const paragraph = document.createElement("p");
+                    const strong = document.createElement("strong");
+
+                    strong.textContent = `${label}: `;
+                    paragraph.appendChild(strong);
+                    paragraph.appendChild(
+                        document.createTextNode(value ?? "Not available")
+                    );
+
+                    card.appendChild(paragraph);
+                });
+
+                const passengerHeading = document.createElement("h4");
+                passengerHeading.textContent = "Passengers";
+                card.appendChild(passengerHeading);
+
+                const passengerList = document.createElement("ul");
+
+                (booking.passengers || []).forEach((passenger) => {
+                    const item = document.createElement("li");
+                    item.textContent =
+                        `${passenger.firstName} ${passenger.lastName} (${passenger.email})`;
+                    passengerList.appendChild(item);
+                });
+
+                card.appendChild(passengerList);
+                bookingsContainer.appendChild(card);
+            });
+
+        } catch (error) {
+            console.error("Dashboard booking error:", error);
+            message.textContent =
+                "Something went wrong while loading your bookings. Please try again.";
+        }
+    });
+</script>
+
+<%- include('./partials/footer') %>
