@@ -2,7 +2,33 @@
 
 <section class="trains-hero">
     <h1>Welcome to the Admin Dashboard</h1>
-    <p>Signed in as <%= user.name %>.</p>
+    <p>Signed in as <strong><%= user.name %></strong>.</p>
+    <p>Manage Kizuna Rail operations from your administration dashboard.</p>
+</section>
+
+<section class="content">
+    <h2>Administration</h2>
+    <p>Select an administrative area below.</p>
+
+    <div class="admin-dashboard-links">
+
+        <article class="admin-card">
+            <h3>Bookings Management</h3>
+            <p>View and manage customer train bookings.</p>
+            <a href="/bookings-admin" class="button">
+                Manage Bookings
+            </a>
+        </article>
+
+        <article class="admin-card">
+            <h3>User Management</h3>
+            <p>User administration is not yet available.</p>
+            <span class="admin-status">
+                Coming Soon
+            </span>
+        </article>
+
+    </div>
 </section>
 
 <%- include('./partials/footer') %>

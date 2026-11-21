@@ -15,7 +15,6 @@ const CUSTOMER_PASSWORD = 'CustomerPass123';
 const ADMIN_EMAIL = 'dashboardadmin@example.com';
 const ADMIN_PASSWORD = 'AdminPass123';
 
-
 async function createTestUsers() {
     const customerRole = await roleModel.findOne({ name: 'customer' });
     const adminRole = await roleModel.findOne({ name: 'admin' });
@@ -31,7 +30,7 @@ async function createTestUsers() {
     // Create an administrator directly using the existing schema.
     const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
 
-   await userModel.create({
+    await userModel.create({
         displayName: 'Dashboard Admin',
         username: 'dashboardadmin',
         email: ADMIN_EMAIL,
@@ -54,7 +53,7 @@ async function createCustomerBooking() {
             {
                 firstName: 'Dashboard',
                 lastName: 'Customer',
-                email: CUSTOMER_EMAIL,
+                email: 'DashboardCustomer@Example.com',
                 phone: '0240000000',
             },
         ],
@@ -68,16 +67,14 @@ describe('Dashboard and navigation integration tests', () => {
     });
 
     test('signed-out users are redirected from the dashboard to login', async () => {
-        const response = await request(app)
-            .get('/dashboard');
+        const response = await request(app).get('/dashboard');
 
         expect(response.status).toBe(302);
         expect(response.headers.location).toBe('/login');
     });
 
     test('signed-out users cannot access their bookings API', async () => {
-        const response = await request(app)
-            .get('/api/bookings/me');
+        const response = await request(app).get('/api/bookings/me');
 
         expect(response.status).toBe(401);
         expect(response.body).toEqual({
@@ -88,12 +85,10 @@ describe('Dashboard and navigation integration tests', () => {
     test('customers can log in and are redirected to the dashboard', async () => {
         const agent = request.agent(app);
 
-        const response = await agent
-            .post('/login')
-            .send({
-                email: CUSTOMER_EMAIL,
-                password: CUSTOMER_PASSWORD,
-            });
+        const response = await agent.post('/login').send({
+            email: CUSTOMER_EMAIL,
+            password: CUSTOMER_PASSWORD,
+        });
 
         expect(response.status).toBe(302);
         expect(response.headers.location).toBe('/dashboard');
@@ -102,12 +97,10 @@ describe('Dashboard and navigation integration tests', () => {
     test('authenticated customers can access the dashboard', async () => {
         const agent = request.agent(app);
 
-        await agent
-            .post('/login')
-            .send({
-                email: CUSTOMER_EMAIL,
-                password: CUSTOMER_PASSWORD,
-            });
+        await agent.post('/login').send({
+            email: CUSTOMER_EMAIL,
+            password: CUSTOMER_PASSWORD,
+        });
 
         const response = await agent.get('/dashboard');
 
@@ -117,15 +110,13 @@ describe('Dashboard and navigation integration tests', () => {
         expect(response.text).toContain('My Bookings');
     });
 
-    test('customers can retrieve their own bookings', async () => {
+    test('customers can retrieve their bookings with case-insensitive email matching', async () => {
         const agent = request.agent(app);
 
-        await agent
-            .post('/login')
-            .send({
-                email: CUSTOMER_EMAIL,
-                password: CUSTOMER_PASSWORD,
-            });
+        await agent.post('/login').send({
+            email: CUSTOMER_EMAIL,
+            password: CUSTOMER_PASSWORD,
+        });
 
         const response = await agent.get('/api/bookings/me');
 
@@ -142,12 +133,10 @@ describe('Dashboard and navigation integration tests', () => {
     test('customers cannot access the admin dashboard', async () => {
         const agent = request.agent(app);
 
-        await agent
-            .post('/login')
-            .send({
-                email: CUSTOMER_EMAIL,
-                password: CUSTOMER_PASSWORD,
-            });
+        await agent.post('/login').send({
+            email: CUSTOMER_EMAIL,
+            password: CUSTOMER_PASSWORD,
+        });
 
         const response = await agent.get('/admin-dashboard');
 
@@ -157,12 +146,10 @@ describe('Dashboard and navigation integration tests', () => {
     test('customers cannot access the admin bookings API', async () => {
         const agent = request.agent(app);
 
-        await agent
-            .post('/login')
-            .send({
-                email: CUSTOMER_EMAIL,
-                password: CUSTOMER_PASSWORD,
-            });
+        await agent.post('/login').send({
+            email: CUSTOMER_EMAIL,
+            password: CUSTOMER_PASSWORD,
+        });
 
         const response = await agent.get('/api/bookings');
 
@@ -175,12 +162,10 @@ describe('Dashboard and navigation integration tests', () => {
     test('admins can log in and are redirected to the admin dashboard', async () => {
         const agent = request.agent(app);
 
-        const response = await agent
-            .post('/login')
-            .send({
-                email: ADMIN_EMAIL,
-                password: ADMIN_PASSWORD,
-            });
+        const response = await agent.post('/login').send({
+            email: ADMIN_EMAIL,
+            password: ADMIN_PASSWORD,
+        });
 
         expect(response.status).toBe(302);
         expect(response.headers.location).toBe('/admin-dashboard');
@@ -189,12 +174,10 @@ describe('Dashboard and navigation integration tests', () => {
     test('admins can access the admin dashboard', async () => {
         const agent = request.agent(app);
 
-        await agent
-            .post('/login')
-            .send({
-                email: ADMIN_EMAIL,
-                password: ADMIN_PASSWORD,
-            });
+        await agent.post('/login').send({
+            email: ADMIN_EMAIL,
+            password: ADMIN_PASSWORD,
+        });
 
         const response = await agent.get('/admin-dashboard');
 
@@ -205,12 +188,10 @@ describe('Dashboard and navigation integration tests', () => {
     test('admins can access the admin bookings API', async () => {
         const agent = request.agent(app);
 
-        await agent
-            .post('/login')
-            .send({
-                email: ADMIN_EMAIL,
-                password: ADMIN_PASSWORD,
-            });
+        await agent.post('/login').send({
+            email: ADMIN_EMAIL,
+            password: ADMIN_PASSWORD,
+        });
 
         const response = await agent.get('/api/bookings');
 
@@ -221,21 +202,17 @@ describe('Dashboard and navigation integration tests', () => {
     test('logout ends the customer session', async () => {
         const agent = request.agent(app);
 
-        await agent
-            .post('/login')
-            .send({
-                email: CUSTOMER_EMAIL,
-                password: CUSTOMER_PASSWORD,
-            });
+        await agent.post('/login').send({
+            email: CUSTOMER_EMAIL,
+            password: CUSTOMER_PASSWORD,
+        });
 
-        const logoutResponse = await agent
-            .post('/logout');
+        const logoutResponse = await agent.post('/logout');
 
         expect(logoutResponse.status).toBe(302);
         expect(logoutResponse.headers.location).toBe('/');
 
-        const dashboardResponse = await agent
-            .get('/dashboard');
+        const dashboardResponse = await agent.get('/dashboard');
 
         expect(dashboardResponse.status).toBe(302);
         expect(dashboardResponse.headers.location).toBe('/login');

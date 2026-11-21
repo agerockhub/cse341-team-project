@@ -15,7 +15,10 @@ export async function getAllBookings() {
 export async function getBookingsByPassengerEmail(email) {
     return booking
         .find({
-            "passengers.email": email.trim().toLowerCase(),
+            "passengers.email": {
+                $regex: `^${email.trim()}$`,
+                $options: "i",
+            },
         })
         .sort({ createdAt: -1 })
         .lean();
