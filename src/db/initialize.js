@@ -12,6 +12,19 @@ const starterCollections = [
   ['trains', trains]
 ];
 
+const roleNames = ['customer', 'admin'];
+
+// Adds the standard roles by name. Existing roles are left alone,
+// so users keep a valid role reference.
+const initializeRoles = async (db) => {
+  const roles = db.collection('roles');
+  await roles.createIndex({ name: 1 }, { unique: true });
+
+  for (const name of roleNames) {
+    await roles.updateOne({ name }, { $setOnInsert: { name } }, { upsert: true });
+  }
+};
+
 const initializeDatabase = async (db) => {
   if (!db) {
     throw new Error('A database connection is required to initialize data.');
@@ -28,4 +41,4 @@ const initializeDatabase = async (db) => {
   await bookings.createIndex({ id: 1 }, { unique: true });
 };
 
-export { initializeDatabase, starterCollections };
+export { initializeDatabase, initializeRoles, starterCollections };
