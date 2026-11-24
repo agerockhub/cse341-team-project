@@ -1,14 +1,18 @@
-const capitalize = (text) => (text ? text.charAt(0).toUpperCase() + text.slice(1) : '');
+const DEFAULT_LIMIT = 10;
+const MAX_LIMIT = 50;
 
-let allTrips = [];
+let current = { page: 1, limit: DEFAULT_LIMIT };
 
-const fillSelect = (select, values) => {
-    [...new Set(values)].sort().forEach((value) => {
-        const option = document.createElement('option');
-        option.value = value;
-        option.textContent = capitalize(value);
-        select.append(option);
-    });
+// Reads ?page= and ?limit= from the address bar, falling back to safe defaults.
+const readPageParams = () => {
+    const params = new URLSearchParams(window.location.search);
+    const page = Number.parseInt(params.get('page'), 10);
+    const limit = Number.parseInt(params.get('limit'), 10);
+
+    return {
+        page: Number.isInteger(page) && page >= 1 ? page : 1,
+        limit: Number.isInteger(limit) && limit >= 1 && limit <= MAX_LIMIT ? limit : DEFAULT_LIMIT
+    };
 };
 
 const renderTrips = (trips) => {
@@ -16,7 +20,7 @@ const renderTrips = (trips) => {
     const templateEl = document.getElementById('trip-card-template');
 
     if (trips.length === 0) {
-        listEl.textContent = 'No trips match your filters.';
+        listEl.textContent = 'No trips on this page.';
         return;
     }
 
@@ -58,44 +62,67 @@ const renderTrips = (trips) => {
     listEl.replaceChildren(fragment);
 };
 
-const applyFilters = () => {
-    const region = document.getElementById('trip-region-filter').value;
-    const season = document.getElementById('trip-season-filter').value;
+const updateControls = (pagination) => {
+    const totalPages = Math.max(pagination.totalPages, 1);
 
-    const filtered = allTrips.filter(
-        (trip) =>
-            (region === 'all' || trip.region === region) &&
-            (season === 'all' || trip.bestSeason === season)
-    );
-
-    renderTrips(filtered);
+    document.getElementById('trips-pagination').hidden = false;
+    document.getElementById('trips-page-info').textContent =
+        `Page ${pagination.page} of ${totalPages} (${pagination.totalItems} trips)`;
+    document.getElementById('trips-prev').disabled = !pagination.hasPreviousPage;
+    document.getElementById('trips-next').disabled = !pagination.hasNextPage;
 };
 
-const loadTrips = async () => {
+// historyMode: 'push' adds a browser history entry, 'replace' rewrites the current one, false leaves the address alone.
+const loadTrips = async ({ page, limit }, historyMode = false) => {
     const loadingEl = document.getElementById('trips-loading');
     const errorEl = document.getElementById('trips-error');
 
+    loadingEl.hidden = false;
+    errorEl.hidden = true;
+
     try {
-        const response = await fetch('/api/trips');
+        const response = await fetch(`/api/trips?page=${page}&limit=${limit}`);
         if (!response.ok) {
             throw new Error(`Failed to load trips (${response.status})`);
         }
 
-        allTrips = await response.json();
+        const { data, pagination } = await response.json();
 
-        fillSelect(document.getElementById('trip-region-filter'), allTrips.map((trip) => trip.region));
-        fillSelect(document.getElementById('trip-season-filter'), allTrips.map((trip) => trip.bestSeason));
+        // A page past the end (for example ?page=99) falls back to the last page.
+        if (pagination.totalPages > 0 && page > pagination.totalPages) {
+            await loadTrips({ page: pagination.totalPages, limit }, 'replace');
+            return;
+        }
 
-        document.getElementById('trip-region-filter').addEventListener('change', applyFilters);
-        document.getElementById('trip-season-filter').addEventListener('change', applyFilters);
+        current = { page, limit };
+        renderTrips(data);
+        updateControls(pagination);
 
-        renderTrips(allTrips);
-        loadingEl.hidden = true;
+        const url = `/trips?page=${page}&limit=${limit}`;
+        if (historyMode === 'push') {
+            window.history.pushState(null, '', url);
+        } else if (historyMode === 'replace') {
+            window.history.replaceState(null, '', url);
+        }
     } catch (error) {
-        loadingEl.hidden = true;
         errorEl.hidden = false;
         errorEl.textContent = 'Unable to load trips right now. Please try again in a moment.';
+    } finally {
+        loadingEl.hidden = true;
     }
 };
 
-document.addEventListener('DOMContentLoaded', loadTrips);
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('trips-prev').addEventListener('click', () => {
+        loadTrips({ page: current.page - 1, limit: current.limit }, 'push');
+    });
+
+    document.getElementById('trips-next').addEventListener('click', () => {
+        loadTrips({ page: current.page + 1, limit: current.limit }, 'push');
+    });
+
+    // The browser's back and forward buttons reload the matching page.
+    window.addEventListener('popstate', () => loadTrips(readPageParams()));
+
+    loadTrips(readPageParams());
+});

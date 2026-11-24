@@ -20,11 +20,39 @@ const router = Router();
  * @swagger
  * /api/trips:
  *   get:
- *     summary: Get all trips
+ *     summary: Get trips, one page at a time
  *     tags: [Trips]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *           minimum: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           minimum: 1
+ *           maximum: 50
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [name, region, distance, bestSeason]
+ *           default: name
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: asc
  *     responses:
  *       200:
- *         description: A list of all trips
+ *         description: A page of trips with pagination metadata (data, pagination, query)
+ *       400:
+ *         description: Invalid page, limit, sort or order
  *       500:
  *         description: Failed to fetch trips
  */
