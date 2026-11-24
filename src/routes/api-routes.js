@@ -1,11 +1,18 @@
+// src/routes/api-routes.js
 import { Router } from 'express';
 import { getAllTrips, getTripById } from '../controllers/trips.js';
 import {
     getSchedulesForTrip,
     getSchedulesForTripAndMonth,
 } from '../controllers/schedules.js';
-import { getAllBookings } from '../controllers/bookings.js';
-import { requireApiRole } from '../middleware/auth.js';
+import {
+    getAllBookings,
+    getMyBookings,
+} from '../controllers/bookings.js';
+import {
+    requireApiLogin,
+    requireApiRole,
+} from '../middleware/auth.js';
 
 const router = Router();
 
@@ -85,6 +92,23 @@ router.get('/api/trips/:id/schedules', (req, res, next) => {
 
     return getSchedulesForTrip(req, res, next);
 });
+
+/**
+ * @swagger
+ * /api/bookings/me:
+ *   get:
+ *     summary: Get bookings belonging to the logged-in user
+ *     description: Requires an authenticated session.
+ *     tags: [Bookings]
+ *     responses:
+ *       200:
+ *         description: The user's bookings
+ *       401:
+ *         description: Not signed in
+ *       500:
+ *         description: Failed to fetch bookings
+ */
+router.get('/api/bookings/me', requireApiLogin, getMyBookings);
 
 /**
  * @swagger
