@@ -20,7 +20,7 @@ const router = Router();
  * @swagger
  * /api/trips:
  *   get:
- *     summary: Get trips, one page at a time
+ *     summary: Get trips, one page at a time, with optional filters and search
  *     tags: [Trips]
  *     parameters:
  *       - in: query
@@ -48,11 +48,28 @@ const router = Router();
  *           type: string
  *           enum: [asc, desc]
  *           default: asc
+ *       - in: query
+ *         name: region
+ *         schema:
+ *           type: string
+ *           enum: [central, northern, kansai, hokkaido]
+ *       - in: query
+ *         name: season
+ *         schema:
+ *           type: string
+ *           enum: [spring, summer, autumn, winter]
+ *       - in: query
+ *         name: q
+ *         description: Searches trip names and descriptions (case-insensitive, 1 to 100 characters).
+ *         schema:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 100
  *     responses:
  *       200:
- *         description: A page of trips with pagination metadata (data, pagination, query)
+ *         description: A page of matching trips with pagination metadata (data, pagination, query). No matches returns an empty data array.
  *       400:
- *         description: Invalid page, limit, sort or order
+ *         description: Invalid page, limit, sort, order, region, season or q
  *       500:
  *         description: Failed to fetch trips
  */

@@ -3,6 +3,34 @@
         <%= title %>
     </h1>
 
+    <form id="filters" role="search">
+        <label for="trip-search">Search:</label>
+        <input type="search" id="trip-search" maxlength="100" placeholder="Name or description">
+
+        <label for="trip-region-filter">Region:</label>
+        <select id="trip-region-filter">
+            <option value="">All Regions</option>
+            <% regions.forEach((region)=> { %>
+                <option value="<%= region %>">
+                    <%= region.charAt(0).toUpperCase() + region.slice(1) %>
+                </option>
+                <% }); %>
+        </select>
+
+        <label for="trip-season-filter">Season:</label>
+        <select id="trip-season-filter">
+            <option value="">Any Season</option>
+            <% seasons.forEach((season)=> { %>
+                <option value="<%= season %>">
+                    <%= season.charAt(0).toUpperCase() + season.slice(1) %>
+                </option>
+                <% }); %>
+        </select>
+
+        <button type="submit" class="btn btn-primary">Search</button>
+        <button type="button" class="btn btn-secondary" id="trip-clear">Clear</button>
+    </form>
+
     <div class="trains-state" id="trips-loading">Loading trips...</div>
     <div class="trains-state trains-error" id="trips-error" hidden></div>
 

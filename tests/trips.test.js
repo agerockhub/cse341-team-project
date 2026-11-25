@@ -71,3 +71,78 @@ describe('GET /api/trips pagination', () => {
         expect(response.body.errors.length).toBeGreaterThan(0);
     });
 });
+
+describe('GET /api/trips filters and search', () => {
+    const idsFor = async (query) => {
+        const response = await request(app).get('/api/trips').query(query);
+        return { response, ids: response.body.data.map((trip) => trip.id).sort() };
+    };
+
+    test('region returns only that region and counts only the matches', async () => {
+        const { response, ids } = await idsFor({ region: 'central' });
+
+        expect(response.status).toBe(200);
+        expect(ids).toEqual(['alpine-panorama', 'gorge-explorer']);
+        expect(response.body.pagination.totalItems).toBe(2);
+        expect(response.body.query.region).toBe('central');
+    });
+
+    test('season returns only trips whose best season matches', async () => {
+        const { ids } = await idsFor({ season: 'autumn' });
+
+        expect(ids).toEqual(['alpine-panorama', 'gorge-explorer', 'romantic-gorge']);
+    });
+
+    test('q searches names and descriptions without caring about case', async () => {
+        const lower = await idsFor({ q: 'gorge' });
+        const upper = await idsFor({ q: 'GORGE' });
+
+        expect(lower.ids).toEqual(['gorge-explorer', 'romantic-gorge']);
+        expect(upper.ids).toEqual(lower.ids);
+    });
+
+    test('region, season and q combine', async () => {
+        const { ids } = await idsFor({ region: 'central', season: 'autumn', q: 'alpine' });
+
+        expect(ids).toEqual(['alpine-panorama']);
+    });
+
+    test('filters work with pagination and count only the matches', async () => {
+        const response = await request(app).get('/api/trips').query({ season: 'autumn', limit: 2 });
+
+        expect(response.body.data).toHaveLength(2);
+        expect(response.body.pagination.totalItems).toBe(3);
+        expect(response.body.pagination.totalPages).toBe(2);
+        expect(response.body.pagination.hasNextPage).toBe(true);
+    });
+
+    test('no matches returns 200 with an empty array', async () => {
+        const { response } = await idsFor({ q: 'zzzzzz' });
+
+        expect(response.status).toBe(200);
+        expect(response.body.data).toEqual([]);
+        expect(response.body.pagination.totalItems).toBe(0);
+        expect(response.body.pagination.totalPages).toBe(0);
+    });
+
+    test('special characters in q are treated as plain text', async () => {
+        const { response } = await idsFor({ q: '(' });
+
+        expect(response.status).toBe(200);
+        expect(response.body.data).toEqual([]);
+    });
+
+    test.each([
+        'region=mars',
+        'season=monsoon',
+        'q=',
+        'q=%20%20',
+        'q=a&q=b',
+        `q=${'a'.repeat(101)}`
+    ])('invalid query %s returns 400 with an errors list', async (query) => {
+        const response = await request(app).get(`/api/trips?${query}`);
+
+        expect(response.status).toBe(400);
+        expect(response.body.errors.length).toBeGreaterThan(0);
+    });
+});

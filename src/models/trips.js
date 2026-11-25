@@ -9,14 +9,14 @@ export async function getAllTrips() {
     return trip.find({}).lean();
 }
 
-export async function getPaginatedTrips({ page, limit, sort, order }) {
+export async function getPaginatedTrips({ filter = {}, page, limit, sort, order }) {
     const skip = (page - 1) * limit;
     // The id is a tie-breaker, so trips with the same sort value keep a stable order between pages.
     const sortOptions = { [sort]: order, id: 1 };
 
     const [trips, totalItems] = await Promise.all([
-        trip.find({}).sort(sortOptions).skip(skip).limit(limit).lean(),
-        trip.countDocuments({}),
+        trip.find(filter).sort(sortOptions).skip(skip).limit(limit).lean(),
+        trip.countDocuments(filter),
     ]);
 
     return { trips, totalItems };
