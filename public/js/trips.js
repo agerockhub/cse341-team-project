@@ -10,14 +10,24 @@ const optionValue = (selectId, value) => {
     return value && [...select.options].some((option) => option.value === value) ? value : '';
 };
 
+// Accepts only plain whole numbers such as "2" (not "2abc" or "5.5").
+const parseWholeNumber = (value) => {
+    if (typeof value !== 'string' || !/^\d+$/.test(value)) {
+        return null;
+    }
+
+    const number = Number(value);
+    return Number.isSafeInteger(number) ? number : null;
+};
+
 const readParams = () => {
     const params = new URLSearchParams(window.location.search);
-    const page = Number.parseInt(params.get('page'), 10);
-    const limit = Number.parseInt(params.get('limit'), 10);
+    const page = parseWholeNumber(params.get('page'));
+    const limit = parseWholeNumber(params.get('limit'));
 
     return {
-        page: Number.isInteger(page) && page >= 1 ? page : 1,
-        limit: Number.isInteger(limit) && limit >= 1 && limit <= MAX_LIMIT ? limit : DEFAULT_LIMIT,
+        page: page !== null && page >= 1 ? page : 1,
+        limit: limit !== null && limit >= 1 && limit <= MAX_LIMIT ? limit : DEFAULT_LIMIT,
         q: (params.get('q') || '').trim().slice(0, MAX_SEARCH_LENGTH),
         region: optionValue('trip-region-filter', params.get('region')),
         season: optionValue('trip-season-filter', params.get('season'))
