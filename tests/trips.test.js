@@ -70,6 +70,13 @@ describe('GET /api/trips pagination', () => {
         expect(Array.isArray(response.body.errors)).toBe(true);
         expect(response.body.errors.length).toBeGreaterThan(0);
     });
+
+    test('a page number that is too large returns 400', async () => {
+        const response = await request(app).get('/api/trips?page=99999999999999999999');
+
+        expect(response.status).toBe(400);
+        expect(response.body.errors[0].field).toBe('page');
+    });
 });
 
 describe('GET /api/trips filters and search', () => {

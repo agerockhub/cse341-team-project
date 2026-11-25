@@ -25,7 +25,7 @@ const parsePositiveInteger = (value, defaultValue) => {
         return null;
     }
     const parsed = Number(value);
-    return parsed >= 1 ? parsed : null;
+    return Number.isSafeInteger(parsed) && parsed >= 1 ? parsed : null;
 };
 
 // ---- API controllers (JSON) ----
