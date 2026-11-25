@@ -3,22 +3,16 @@
         <%= title %>
     </h1>
 
-    <div id="filters">
-        Search by Region:
-        <select id="trip-region-filter">
-            <option value="all">All Regions</option>
-        </select>
-
-        Search by Season:
-        <select id="trip-season-filter">
-            <option value="all">Any Season</option>
-        </select>
-    </div>
-
     <div class="trains-state" id="trips-loading">Loading trips...</div>
     <div class="trains-state trains-error" id="trips-error" hidden></div>
 
     <div class="routes-grid" id="trips-list"></div>
+
+    <nav class="trips-pagination" id="trips-pagination" aria-label="Trip pages" hidden>
+        <button type="button" class="btn btn-secondary" id="trips-prev">Previous</button>
+        <span id="trips-page-info" aria-live="polite"></span>
+        <button type="button" class="btn btn-secondary" id="trips-next">Next</button>
+    </nav>
 
     <template id="trip-card-template">
         <div class="route-card">
