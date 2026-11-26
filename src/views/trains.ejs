@@ -3,15 +3,41 @@
 <section class="trains-hero">
     <h1>Learn about our Trains</h1>
     <p>
-        Explore the physical trains that power scenic the trips across the Kizuna Rail network.
+        Explore the physical trains that power scenic trips across the Kizuna Rail network.
     </p>
 </section>
 
 <section class="trains-catalog">
     <div class="trains-state" id="trains-loading">Loading trains...</div>
+
     <div class="trains-state trains-error" id="trains-error" hidden></div>
 
     <div class="trains-grid" id="trains-list"></div>
+
+    <!-- Pagination Controls -->
+    <nav class="trains-pagination" id="trains-pagination" aria-label="Train pagination" hidden>
+        <button
+            type="button"
+            id="trains-prev"
+            class="pagination-btn"
+            disabled
+        >
+            &larr; Previous
+        </button>
+
+        <span id="trains-page-info" class="pagination-info">
+            Page 1 of 1
+        </span>
+
+        <button
+            type="button"
+            id="trains-next"
+            class="pagination-btn"
+            disabled
+        >
+            Next &rarr;
+        </button>
+    </nav>
 
     <template id="train-card-template">
         <article class="train-card">
@@ -31,14 +57,17 @@
                     <dt>Type</dt>
                     <dd data-field="type"></dd>
                 </div>
+
                 <div class="spec-item">
                     <dt>Top Speed</dt>
                     <dd data-field="speed"></dd>
                 </div>
+
                 <div class="spec-item">
                     <dt>Capacity</dt>
                     <dd data-field="seats"></dd>
                 </div>
+
                 <div class="spec-item">
                     <dt>Power</dt>
                     <dd data-field="power"></dd>
