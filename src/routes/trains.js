@@ -29,6 +29,111 @@ const trainsPage = (req, res) => {
     res.render('trains', { title: 'Trains' });
 };
 
+/**
+ * @swagger
+ * /api/trains:
+ *   get:
+ *     summary: Get a paginated list of trains
+ *     description: Returns train records with pagination and sorting options.
+ *     tags:
+ *       - Trains
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number to retrieve.
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 10
+ *         description: Number of trains per page.
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - name
+ *             - operator
+ *             - type
+ *             - maxSpeedKmh
+ *             - capacity
+ *             - powerSource
+ *           default: name
+ *         description: Field used to sort the train records.
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - asc
+ *             - desc
+ *           default: asc
+ *         description: Sort order.
+ *     responses:
+ *       200:
+ *         description: Trains retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       operator:
+ *                         type: string
+ *                       type:
+ *                         type: string
+ *                       maxSpeedKmh:
+ *                         type: number
+ *                       capacity:
+ *                         type: number
+ *                       powerSource:
+ *                         type: string
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     currentPage:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     totalItems:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     hasNextPage:
+ *                       type: boolean
+ *                     hasPreviousPage:
+ *                       type: boolean
+ *       400:
+ *         description: Invalid pagination or sorting parameters.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       field:
+ *                         type: string
+ *                       message:
+ *                         type: string
+ */
 const trainsApi = async (req, res, next) => {
     const errors = [];
 

@@ -36,7 +36,7 @@ describe('GET /api/trains', () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: 'series-e353',
-          name: 'Series E353 Limited Express',
+         name: 'Series E353 Limited Express',
           powerSource: 'Electric',
         }),
       ])
@@ -80,6 +80,32 @@ describe('GET /api/trains', () => {
       expect.arrayContaining([
         expect.objectContaining({
           field: 'page',
+        }),
+      ])
+    );
+  });
+
+  test('returns 400 when limit is zero', async () => {
+    const response = await request(app).get('/api/trains?limit=0');
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          field: 'limit',
+        }),
+      ])
+    );
+  });
+
+  test('returns 400 when limit exceeds the maximum of 50', async () => {
+    const response = await request(app).get('/api/trains?limit=51');
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          field: 'limit',
         }),
       ])
     );
