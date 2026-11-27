@@ -9,6 +9,13 @@ const TRIP_SORT_FIELDS = ["name", "region", "distance", "bestSeason"];
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
 
+const MAX_SEARCH_LENGTH = 100;
+const TRIP_REGIONS = ["central", "northern", "kansai", "hokkaido"];
+const TRIP_SEASONS = ["spring", "summer", "autumn", "winter"];
+
+// Makes characters such as ( or . plain text, so they cannot break the search pattern.
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 // Query values arrive as strings (or arrays). Returns null when a value is not a whole number of 1 or more.
 const parsePositiveInteger = (value, defaultValue) => {
     if (value === undefined) {
@@ -18,7 +25,7 @@ const parsePositiveInteger = (value, defaultValue) => {
         return null;
     }
     const parsed = Number(value);
-    return parsed >= 1 ? parsed : null;
+    return Number.isSafeInteger(parsed) && parsed >= 1 ? parsed : null;
 };
 
 // ---- API controllers (JSON) ----
@@ -68,12 +75,47 @@ export async function getAllTrips(req, res) {
         errors.push({ field: "order", message: "order must be asc or desc." });
     }
 
+    const { region, season, q } = req.query;
+
+    if (region !== undefined && !TRIP_REGIONS.includes(region)) {
+        errors.push({ field: "region", message: `region must be one of: ${TRIP_REGIONS.join(", ")}.` });
+    }
+
+    if (season !== undefined && !TRIP_SEASONS.includes(season)) {
+        errors.push({ field: "season", message: `season must be one of: ${TRIP_SEASONS.join(", ")}.` });
+    }
+
+    let searchText;
+    if (q !== undefined) {
+        searchText = typeof q === "string" ? q.trim() : "";
+        if (!searchText || searchText.length > MAX_SEARCH_LENGTH) {
+            errors.push({
+                field: "q",
+                message: `q must be one piece of text between 1 and ${MAX_SEARCH_LENGTH} characters.`,
+            });
+        }
+    }
+
     if (errors.length > 0) {
         return res.status(400).json({ errors });
     }
 
+    // Build a new filter from the accepted values. req.query is never passed to Mongoose directly.
+    const filter = {};
+    if (region) {
+        filter.region = region;
+    }
+    if (season) {
+        filter.bestSeason = season;
+    }
+    if (searchText) {
+        const pattern = new RegExp(escapeRegex(searchText), "i");
+        filter.$or = [{ name: pattern }, { description: pattern }];
+    }
+
     try {
         const { trips, totalItems } = await getPaginatedTrips({
+            filter,
             page,
             limit,
             sort,
@@ -90,7 +132,7 @@ export async function getAllTrips(req, res) {
                 hasNextPage: page * limit < totalItems,
                 hasPreviousPage: page > 1,
             },
-            query: { sort, order: orderText },
+            query: { q: searchText, region, season, sort, order: orderText },
         });
     } catch (error) {
         console.error("Error fetching trips:", error);
@@ -103,9 +145,13 @@ export async function getAllTrips(req, res) {
 
 // ---- EJS page controllers ----
 
-// The trip list is filled in by client-side JavaScript, so no data is needed here.
+// The trips come from the API, but the dropdown choices are rendered here.
 export function tripListPage(req, res) {
-    res.render("trips/list", { title: "Scenic Train Trips" });
+    res.render("trips/list", {
+        title: "Scenic Train Trips",
+        regions: TRIP_REGIONS,
+        seasons: TRIP_SEASONS,
+    });
 }
 
 export async function tripDetailsPage(req, res, next) {

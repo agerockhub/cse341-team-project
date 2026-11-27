@@ -1,26 +1,70 @@
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
+const MAX_SEARCH_LENGTH = 100;
 
-let current = { page: 1, limit: DEFAULT_LIMIT };
+let current = { page: 1, limit: DEFAULT_LIMIT, q: '', region: '', season: '' };
 
-// Reads ?page= and ?limit= from the address bar, falling back to safe defaults.
-const readPageParams = () => {
+// A dropdown value from the address bar is only accepted if the dropdown really has that option.
+const optionValue = (selectId, value) => {
+    const select = document.getElementById(selectId);
+    return value && [...select.options].some((option) => option.value === value) ? value : '';
+};
+
+// Accepts only plain whole numbers such as "2" (not "2abc" or "5.5").
+const parseWholeNumber = (value) => {
+    if (typeof value !== 'string' || !/^\d+$/.test(value)) {
+        return null;
+    }
+
+    const number = Number(value);
+    return Number.isSafeInteger(number) ? number : null;
+};
+
+const readParams = () => {
     const params = new URLSearchParams(window.location.search);
-    const page = Number.parseInt(params.get('page'), 10);
-    const limit = Number.parseInt(params.get('limit'), 10);
+    const page = parseWholeNumber(params.get('page'));
+    const limit = parseWholeNumber(params.get('limit'));
 
     return {
-        page: Number.isInteger(page) && page >= 1 ? page : 1,
-        limit: Number.isInteger(limit) && limit >= 1 && limit <= MAX_LIMIT ? limit : DEFAULT_LIMIT
+        page: page !== null && page >= 1 ? page : 1,
+        limit: limit !== null && limit >= 1 && limit <= MAX_LIMIT ? limit : DEFAULT_LIMIT,
+        q: (params.get('q') || '').trim().slice(0, MAX_SEARCH_LENGTH),
+        region: optionValue('trip-region-filter', params.get('region')),
+        season: optionValue('trip-season-filter', params.get('season'))
     };
 };
 
-const renderTrips = (trips) => {
+const buildQueryString = ({ page, limit, q, region, season }) => {
+    const params = new URLSearchParams({ page, limit });
+
+    if (q) {
+        params.set('q', q);
+    }
+    if (region) {
+        params.set('region', region);
+    }
+    if (season) {
+        params.set('season', season);
+    }
+
+    return params.toString();
+};
+
+const hasFilters = ({ q, region, season }) => Boolean(q || region || season);
+
+// Puts the values from the address bar (or the last search) back into the form.
+const syncControls = ({ q, region, season }) => {
+    document.getElementById('trip-search').value = q;
+    document.getElementById('trip-region-filter').value = region;
+    document.getElementById('trip-season-filter').value = season;
+};
+
+const renderTrips = (trips, filtered) => {
     const listEl = document.getElementById('trips-list');
     const templateEl = document.getElementById('trip-card-template');
 
     if (trips.length === 0) {
-        listEl.textContent = 'No trips on this page.';
+        listEl.textContent = filtered ? 'No trips match your filters.' : 'No trips on this page.';
         return;
     }
 
@@ -73,7 +117,7 @@ const updateControls = (pagination) => {
 };
 
 // historyMode: 'push' adds a browser history entry, 'replace' rewrites the current one, false leaves the address alone.
-const loadTrips = async ({ page, limit }, historyMode = false) => {
+const loadTrips = async (state, historyMode = false) => {
     const loadingEl = document.getElementById('trips-loading');
     const errorEl = document.getElementById('trips-error');
 
@@ -81,24 +125,25 @@ const loadTrips = async ({ page, limit }, historyMode = false) => {
     errorEl.hidden = true;
 
     try {
-        const response = await fetch(`/api/trips?page=${page}&limit=${limit}`);
+        const response = await fetch(`/api/trips?${buildQueryString(state)}`);
         if (!response.ok) {
             throw new Error(`Failed to load trips (${response.status})`);
         }
 
         const { data, pagination } = await response.json();
 
-        // A page past the end (for example ?page=99) falls back to the last page.
-        if (pagination.totalPages > 0 && page > pagination.totalPages) {
-            await loadTrips({ page: pagination.totalPages, limit }, 'replace');
+        // A page past the end (for example ?page=99) falls back to the last page, or to page 1 when nothing matches.
+        if (state.page > 1 && (pagination.totalPages === 0 || state.page > pagination.totalPages)) {
+            await loadTrips({ ...state, page: Math.max(pagination.totalPages, 1) }, 'replace');
             return;
         }
 
-        current = { page, limit };
-        renderTrips(data);
+        current = state;
+        syncControls(state);
+        renderTrips(data, hasFilters(state));
         updateControls(pagination);
 
-        const url = `/trips?page=${page}&limit=${limit}`;
+        const url = `/trips?${buildQueryString(state)}`;
         if (historyMode === 'push') {
             window.history.pushState(null, '', url);
         } else if (historyMode === 'replace') {
@@ -112,17 +157,43 @@ const loadTrips = async ({ page, limit }, historyMode = false) => {
     }
 };
 
+// A new search or filter always starts again at page 1.
+const applyFilters = () => {
+    loadTrips({
+        page: 1,
+        limit: current.limit,
+        q: document.getElementById('trip-search').value.trim().slice(0, MAX_SEARCH_LENGTH),
+        region: document.getElementById('trip-region-filter').value,
+        season: document.getElementById('trip-season-filter').value
+    }, 'push');
+};
+
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('filters').addEventListener('submit', (event) => {
+        event.preventDefault();
+        applyFilters();
+    });
+
+    document.getElementById('trip-region-filter').addEventListener('change', applyFilters);
+    document.getElementById('trip-season-filter').addEventListener('change', applyFilters);
+
+    document.getElementById('trip-clear').addEventListener('click', () => {
+        document.getElementById('trip-search').value = '';
+        document.getElementById('trip-region-filter').value = '';
+        document.getElementById('trip-season-filter').value = '';
+        applyFilters();
+    });
+
     document.getElementById('trips-prev').addEventListener('click', () => {
-        loadTrips({ page: current.page - 1, limit: current.limit }, 'push');
+        loadTrips({ ...current, page: current.page - 1 }, 'push');
     });
 
     document.getElementById('trips-next').addEventListener('click', () => {
-        loadTrips({ page: current.page + 1, limit: current.limit }, 'push');
+        loadTrips({ ...current, page: current.page + 1 }, 'push');
     });
 
-    // The browser's back and forward buttons reload the matching page.
-    window.addEventListener('popstate', () => loadTrips(readPageParams()));
+    // The browser's back and forward buttons reload the matching page and filters.
+    window.addEventListener('popstate', () => loadTrips(readParams()));
 
-    loadTrips(readPageParams());
+    loadTrips(readParams());
 });
