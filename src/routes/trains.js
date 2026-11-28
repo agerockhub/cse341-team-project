@@ -9,8 +9,23 @@ const TRAIN_SORT_FIELDS = [
     'powerSource',
 ];
 
+const TRAIN_SEARCH_FIELDS = [
+    'name',
+    'operator',
+    'type',
+    'powerSource',
+    'bestFor',
+    'description',
+];
+
+const TRAIN_FILTER_FIELDS = [
+    'type',
+    'powerSource',
+];
+
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
+const MAX_SEARCH_LENGTH = 100;
 
 const parsePositiveInteger = (value, defaultValue) => {
     if (value === undefined) {
@@ -22,7 +37,12 @@ const parsePositiveInteger = (value, defaultValue) => {
     }
 
     const parsed = Number(value);
+
     return Number.isSafeInteger(parsed) && parsed >= 1 ? parsed : null;
+};
+
+const escapeRegex = (value) => {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 };
 
 const trainsPage = (req, res) => {
@@ -33,11 +53,27 @@ const trainsPage = (req, res) => {
  * @swagger
  * /api/trains:
  *   get:
- *     summary: Get a paginated list of trains
- *     description: Returns train records with pagination and sorting options.
+ *     summary: Get trains with search, filtering, pagination and sorting
+ *     description: Returns train records matching keyword searches and filters.
  *     tags:
  *       - Trains
  *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *           maxLength: 100
+ *         description: Search trains by name, operator, type, power source, bestFor, or description.
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *         description: Filter trains by train type.
+ *       - in: query
+ *         name: powerSource
+ *         schema:
+ *           type: string
+ *         description: Filter trains by power source.
  *       - in: query
  *         name: page
  *         schema:
@@ -65,7 +101,7 @@ const trainsPage = (req, res) => {
  *             - capacity
  *             - powerSource
  *           default: name
- *         description: Field used to sort the train records.
+ *         description: Field used to sort train records.
  *       - in: query
  *         name: order
  *         schema:
@@ -102,6 +138,10 @@ const trainsPage = (req, res) => {
  *                         type: number
  *                       powerSource:
  *                         type: string
+ *                       bestFor:
+ *                         type: string
+ *                       description:
+ *                         type: string
  *                 pagination:
  *                   type: object
  *                   properties:
@@ -118,7 +158,7 @@ const trainsPage = (req, res) => {
  *                     hasPreviousPage:
  *                       type: boolean
  *       400:
- *         description: Invalid pagination or sorting parameters.
+ *         description: Invalid query parameters.
  *         content:
  *           application/json:
  *             schema:
@@ -137,6 +177,7 @@ const trainsPage = (req, res) => {
 const trainsApi = async (req, res, next) => {
     const errors = [];
 
+    // Pagination validation
     const page = parsePositiveInteger(req.query.page, 1);
 
     if (page === null) {
@@ -155,6 +196,7 @@ const trainsApi = async (req, res, next) => {
         });
     }
 
+    // Sorting validation
     const sort = req.query.sort === undefined ? 'name' : req.query.sort;
 
     if (!TRAIN_SORT_FIELDS.includes(sort)) {
@@ -173,6 +215,47 @@ const trainsApi = async (req, res, next) => {
         });
     }
 
+    // Keyword search validation
+    const q = req.query.q;
+
+    if (q !== undefined) {
+        if (typeof q !== 'string') {
+            errors.push({
+                field: 'q',
+                message: 'q must be a single string.',
+            });
+        } else if (q.trim().length === 0) {
+            errors.push({
+                field: 'q',
+                message: 'q cannot be empty.',
+            });
+        } else if (q.trim().length > MAX_SEARCH_LENGTH) {
+            errors.push({
+                field: 'q',
+                message: `q cannot exceed ${MAX_SEARCH_LENGTH} characters.`,
+            });
+        }
+    }
+
+    // Filter validation
+    for (const field of TRAIN_FILTER_FIELDS) {
+        const value = req.query[field];
+
+        if (value !== undefined) {
+            if (typeof value !== 'string') {
+                errors.push({
+                    field,
+                    message: `${field} must be a single string.`,
+                });
+            } else if (value.trim().length === 0) {
+                errors.push({
+                    field,
+                    message: `${field} cannot be empty.`,
+                });
+            }
+        }
+    }
+
     if (errors.length > 0) {
         return res.status(400).json({ errors });
     }
@@ -180,17 +263,41 @@ const trainsApi = async (req, res, next) => {
     const order = orderText === 'asc' ? 1 : -1;
     const skip = (page - 1) * limit;
 
+    // Build MongoDB search and filter query
+    const query = {};
+
+    for (const field of TRAIN_FILTER_FIELDS) {
+        const value = req.query[field];
+
+        if (value !== undefined) {
+            query[field] = value.trim();
+        }
+    }
+
+    if (q !== undefined) {
+        const keyword = escapeRegex(q.trim());
+
+        query.$or = TRAIN_SEARCH_FIELDS.map((field) => ({
+            [field]: {
+                $regex: keyword,
+                $options: 'i',
+            },
+        }));
+    }
+
     try {
         const collection = getDb().collection('trains');
 
+        // Apply search, filters, sorting and pagination
         const [trains, totalItems] = await Promise.all([
             collection
-                .find({})
+                .find(query)
                 .sort({ [sort]: order, id: 1 })
                 .skip(skip)
                 .limit(limit)
                 .toArray(),
-            collection.countDocuments({}),
+
+            collection.countDocuments(query),
         ]);
 
         const totalPages = Math.ceil(totalItems / limit);
